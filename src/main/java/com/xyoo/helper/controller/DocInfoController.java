@@ -6,7 +6,7 @@ import com.xyoo.helper.entity.DocInfo;
 import com.xyoo.helper.service.DocInfoService;
 import com.xyoo.helper.util.FileEncryptionUtil;
 import com.xyoo.helper.util.PdfContentParser;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;

@@ -3,7 +3,7 @@ package com.xyoo.helper.controller;
 import com.xyoo.helper.service.ChatService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;

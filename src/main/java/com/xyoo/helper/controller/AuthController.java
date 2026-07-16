@@ -6,7 +6,7 @@ import com.xyoo.helper.entity.SysUser;
 import com.xyoo.helper.service.AuthService;
 import org.springframework.web.bind.annotation.*;
 
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.*;
 
 /**

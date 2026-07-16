@@ -17,8 +17,8 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -59,7 +59,7 @@ public abstract class AbstractOpenAiStrategy implements LlmStrategy {
     public boolean isEnabled() {
         return props.isEnabled()
                 && props.getApiKey() != null
-                && !props.getApiKey().isBlank();
+                && !props.getApiKey().trim().isEmpty();
     }
 
     @Override
@@ -83,7 +83,7 @@ public abstract class AbstractOpenAiStrategy implements LlmStrategy {
         Map<String, String> userMsg = new LinkedHashMap<>();
         userMsg.put("role", "user");
         userMsg.put("content", message == null ? "" : message);
-        body.put("messages", List.of(userMsg));
+        body.put("messages", Arrays.asList(userMsg));
 
         byte[] requestBody;
         try {
@@ -113,7 +113,7 @@ public abstract class AbstractOpenAiStrategy implements LlmStrategy {
                                 if (!line.startsWith("data:")) {
                                     continue;
                                 }
-                                String data = line.substring(5).strip();
+                                String data = line.substring(5).trim();
                                 if ("[DONE]".equals(data)) {
                                     break;
                                 }

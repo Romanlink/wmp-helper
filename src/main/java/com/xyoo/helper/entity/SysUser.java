@@ -2,7 +2,7 @@ package com.xyoo.helper.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import javax.persistence.*;
+import jakarta.persistence.*;
 import org.hibernate.annotations.Comment;
 
 import java.io.Serializable;

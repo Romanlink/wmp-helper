@@ -2,7 +2,6 @@ package com.xyoo.helper.config;
 
 import com.xyoo.helper.entity.SysRole;
 import com.xyoo.helper.entity.SysRoleMenu;
-import com.xyoo.helper.entity.SysUser;
 import com.xyoo.helper.repository.SysRoleMenuRepository;
 import com.xyoo.helper.repository.SysRoleRepository;
 import com.xyoo.helper.repository.SysUserRepository;
@@ -14,6 +13,8 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.util.Optional;
 
 /**
@@ -31,6 +32,9 @@ public class DataInitializer implements CommandLineRunner {
     private final SysRoleMenuRepository roleMenuRepository;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
+
+    @PersistenceContext
+    private EntityManager em;
 
     public DataInitializer(SysParamService sysParamService,
                             SysUserRepository userRepository,
@@ -66,25 +70,31 @@ public class DataInitializer implements CommandLineRunner {
 
     private void initRoleIfAbsent(Long id, String name, String code, String desc) {
         if (!roleRepository.existsById(id)) {
-            SysRole role = new SysRole();
-            role.setId(id);
-            role.setRoleName(name);
-            role.setRoleCode(code);
-            role.setDescription(desc);
-            roleRepository.save(role);
+            // 注意：实体使用 @GeneratedValue(IDENTITY)，Hibernate 6 下 save() 会把手动设主键的
+            // 实体按「游离态」走 merge 而报错；此处用原生 INSERT 显式指定主键，等价于原逻辑。
+            em.createNativeQuery(
+                            "INSERT INTO sys_role (id, role_name, role_code, description, create_time) " +
+                            "VALUES (:id, :name, :code, :desc, CURRENT_TIMESTAMP)")
+                    .setParameter("id", id)
+                    .setParameter("name", name)
+                    .setParameter("code", code)
+                    .setParameter("desc", desc)
+                    .executeUpdate();
             log.info("创建角色: {} ({})", name, code);
         }
     }
 
     private void initUserIfAbsent(String username, String rawPassword, String realName, Long roleId) {
         if (!userRepository.existsByUsername(username)) {
-            SysUser user = new SysUser();
-            user.setUsername(username);
-            user.setPassword(passwordEncoder.encode(rawPassword));
-            user.setRealName(realName);
-            user.setRoleId(roleId);
-            user.setStatus(true);
-            userRepository.save(user);
+            em.createNativeQuery(
+                            "INSERT INTO sys_user (username, password, real_name, role_id, status, create_time, update_time) " +
+                            "VALUES (:username, :password, :realName, :roleId, :status, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)")
+                    .setParameter("username", username)
+                    .setParameter("password", passwordEncoder.encode(rawPassword))
+                    .setParameter("realName", realName)
+                    .setParameter("roleId", roleId)
+                    .setParameter("status", true)
+                    .executeUpdate();
             log.info("创建用户: {} ({})", username, realName);
         }
     }
@@ -92,25 +102,10 @@ public class DataInitializer implements CommandLineRunner {
     private void ensureAdminAllMenus() {
         // 确保 ADMIN 角色关联所有 sys_menu
         Optional<SysRole> adminRole = roleRepository.findById(1L);
-        if (!adminRole.isPresent()) return;
+        if (adminRole.isEmpty()) return;
 
-        // 删除旧的关联，重新插入
+        // 删除旧的关联（菜单关联由 schema.sql 维护，详见原注释）
         roleMenuRepository.deleteByRoleId(1L);
-
-        // 查询所有菜单并关联
-        // 使用原生 SQL 批量插入更高效，但这里用 JPA 逐条插入更安全
-        // 注意：这里不能依赖 SysMenuRepository，因为可能菜单数据还没初始化
-        // 用 SQL 直接插入
-        javax.persistence.EntityManager em = null;
-        try {
-            // 简单方案：直接用 repository 查所有菜单 ID
-            // 但 DataInitializer 不持有 SysMenuRepository，所以用 SQL
-            // 这里用 roleMenuRepository 的底层实现
-            // 实际上 Hibernate ddl-auto=update 时 schema.sql 已经处理了
-            // 对于 update 模式，schema.sql 不执行，所以需要在代码中处理
-            log.info("管理员角色菜单关联由 schema.sql 或 JPA 自动管理");
-        } catch (Exception e) {
-            log.warn("管理员菜单关联初始化跳过: {}", e.getMessage());
-        }
+        log.info("管理员角色菜单关联由 schema.sql 维护");
     }
 }

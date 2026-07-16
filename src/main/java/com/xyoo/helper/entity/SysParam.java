@@ -1,6 +1,6 @@
 package com.xyoo.helper.entity;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import org.hibernate.annotations.Comment;
 
 import java.io.Serializable;

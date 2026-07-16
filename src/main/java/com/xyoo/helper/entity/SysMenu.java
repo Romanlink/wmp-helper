@@ -1,10 +1,10 @@
 package com.xyoo.helper.entity;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
-import javax.persistence.*;
-import javax.validation.constraints.NotBlank;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.Comment;
 
 import java.io.Serializable;

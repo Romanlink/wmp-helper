@@ -3,7 +3,7 @@ package com.xyoo.helper.controller;
 import com.xyoo.helper.common.Result;
 import com.xyoo.helper.entity.SysMenu;
 import com.xyoo.helper.service.SysMenuService;
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
