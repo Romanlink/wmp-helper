@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 640" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">
+  <rect width="1000" height="640" fill="#f3f4f6"/>
+  <!-- sidebar -->
+  <rect x="0" y="0" width="180" height="640" fill="#1e293b"/>
+  <rect x="22" y="22" width="136" height="34" rx="8" fill="#334155"/>
+  <text x="90" y="45" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">WMP Helper</text>
+  <rect x="0" y="92" width="4" height="40" fill="#3b82f6"/>
+  <text x="24" y="118" fill="#fff" font-size="14" font-weight="600">仪表盘</text>
+  <text x="24" y="166" fill="#94a3b8" font-size="14">文档浏览</text>
+  <text x="24" y="206" fill="#94a3b8" font-size="14">全站检索</text>
+  <text x="24" y="246" fill="#94a3b8" font-size="14">菜单管理</text>
+  <text x="24" y="286" fill="#94a3b8" font-size="14">文档管理</text>
+  <!-- topbar -->
+  <rect x="180" y="0" width="820" height="56" fill="#ffffff" stroke="#e5e7eb"/>
+  <text x="208" y="35" fill="#111827" font-size="16" font-weight="600">仪表盘</text>
+  <circle cx="952" cy="28" r="14" fill="#3b82f6"/>
+  <text x="952" y="33" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">R</text>
+  <!-- stat cards -->
+  <g>
+    <rect x="208" y="80" width="250" height="112" rx="12" fill="#fff" stroke="#e5e7eb"/>
+    <circle cx="244" cy="116" r="18" fill="#dbeafe"/>
+    <text x="244" y="122" text-anchor="middle" fill="#3b82f6" font-size="16" font-weight="700">⚙</text>
+    <text x="276" y="112" fill="#6b7280" font-size="13">系统总数</text>
+    <text x="276" y="150" fill="#111827" font-size="26" font-weight="700">12</text>
+  </g>
+  <g>
+    <rect x="474" y="80" width="250" height="112" rx="12" fill="#fff" stroke="#e5e7eb"/>
+    <circle cx="510" cy="116" r="18" fill="#dcfce7"/>
+    <text x="510" y="122" text-anchor="middle" fill="#16a34a" font-size="16" font-weight="700">📄</text>
+    <text x="542" y="112" fill="#6b7280" font-size="13">文档总数</text>
+    <text x="542" y="150" fill="#111827" font-size="26" font-weight="700">348</text>
+  </g>
+  <g>
+    <rect x="740" y="80" width="250" height="112" rx="12" fill="#fff" stroke="#e5e7eb"/>
+    <circle cx="776" cy="116" r="18" fill="#fef9c3"/>
+    <text x="776" y="122" text-anchor="middle" fill="#ca8a04" font-size="16" font-weight="700">👁</text>
+    <text x="808" y="112" fill="#6b7280" font-size="13">可见系统</text>
+    <text x="808" y="150" fill="#111827" font-size="26" font-weight="700">9</text>
+  </g>
+  <!-- AI chat panel -->
+  <rect x="208" y="216" width="782" height="400" rx="12" fill="#fff" stroke="#e5e7eb"/>
+  <rect x="208" y="216" width="782" height="46" rx="12" fill="#f8fafc"/>
+  <text x="228" y="245" fill="#111827" font-size="14" font-weight="600">AI 助手</text>
+  <!-- assistant bubble -->
+  <rect x="228" y="284" width="560" height="200" rx="10" fill="#f1f5f9"/>
+  <text x="248" y="314" fill="#111827" font-size="14" font-weight="600">MySQL 连接池配置</text>
+  <text x="248" y="342" fill="#374151" font-size="13">以下是推荐的最小配置（缩进已完整保留）：</text>
+  <rect x="248" y="356" width="500" height="104" rx="8" fill="#1e1e2e"/>
+  <text x="264" y="382" fill="#e6e6e6" font-family="monospace" font-size="12">spring:</text>
+  <text x="264" y="402" fill="#e6e6e6" font-family="monospace" font-size="12">  datasource:</text>
+  <text x="264" y="422" fill="#e6e6e6" font-family="monospace" font-size="12">    hikari:</text>
+  <text x="264" y="442" fill="#e6e6e6" font-family="monospace" font-size="12">      maximum-pool-size: 20</text>
+  <!-- input -->
+  <rect x="228" y="556" width="742" height="44" rx="10" fill="#f1f5f9" stroke="#e5e7eb"/>
+  <text x="248" y="583" fill="#9ca3af" font-size="13">输入消息，按 Enter 发送，Shift+Enter 换行</text>
+  <rect x="922" y="564" width="34" height="28" rx="7" fill="#3b82f6"/>
+  <text x="939" y="583" text-anchor="middle" fill="#fff" font-size="13">➤</text>
+</svg>

@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 640" font-family="-apple-system, 'PingFang SC', 'Microsoft YaHei', sans-serif">
+  <rect width="1000" height="640" fill="#f3f4f6"/>
+  <!-- sidebar -->
+  <rect x="0" y="0" width="180" height="640" fill="#1e293b"/>
+  <rect x="22" y="22" width="136" height="34" rx="8" fill="#334155"/>
+  <text x="90" y="45" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">WMP Helper</text>
+  <text x="24" y="118" fill="#94a3b8" font-size="14">仪表盘</text>
+  <rect x="0" y="138" width="4" height="40" fill="#3b82f6"/>
+  <text x="24" y="166" fill="#fff" font-size="14" font-weight="600">文档浏览</text>
+  <text x="24" y="206" fill="#94a3b8" font-size="14">全站检索</text>
+  <text x="24" y="246" fill="#94a3b8" font-size="14">菜单管理</text>
+  <text x="24" y="286" fill="#94a3b8" font-size="14">文档管理</text>
+  <!-- topbar -->
+  <rect x="180" y="0" width="820" height="56" fill="#ffffff" stroke="#e5e7eb"/>
+  <text x="208" y="35" fill="#111827" font-size="16" font-weight="600">文档浏览</text>
+  <!-- menu-panel (doc tree) -->
+  <rect x="180" y="56" width="170" height="584" fill="#ffffff" stroke="#e5e7eb"/>
+  <text x="200" y="86" fill="#6b7280" font-size="12" font-weight="600">文档目录</text>
+  <text x="200" y="120" fill="#111827" font-size="13">▸ 用户中心</text>
+  <text x="220" y="148" fill="#3b82f6" font-size="13">• 登录接口</text>
+  <text x="220" y="176" fill="#374151" font-size="13">• 注册接口</text>
+  <text x="200" y="214" fill="#111827" font-size="13">▸ 订单系统</text>
+  <text x="220" y="242" fill="#374151" font-size="13">• 创建订单</text>
+  <text x="220" y="270" fill="#374151" font-size="13">• 查询订单</text>
+  <text x="200" y="308" fill="#111827" font-size="13">▸ 支付网关</text>
+  <text x="220" y="336" fill="#374151" font-size="13">• 回调通知</text>
+  <!-- doc content -->
+  <rect x="350" y="72" width="630" height="560" rx="12" fill="#ffffff" stroke="#e5e7eb"/>
+  <text x="374" y="112" fill="#111827" font-size="18" font-weight="700">登录接口文档</text>
+  <text x="374" y="146" fill="#374151" font-size="13">POST /api/auth/login — 校验用户名密码并返回 JWT。</text>
+  <text x="374" y="186" fill="#111827" font-size="14" font-weight="600">请求示例（Python）</text>
+  <rect x="374" y="200" width="582" height="150" rx="8" fill="#1e1e2e"/>
+  <text x="392" y="226" fill="#e6e6e6" font-family="monospace" font-size="12">import requests</text>
+  <text x="392" y="248" fill="#e6e6e6" font-family="monospace" font-size="12">resp = requests.post(</text>
+  <text x="392" y="270" fill="#e6e6e6" font-family="monospace" font-size="12">    "https://api.example.com/login",</text>
+  <text x="392" y="292" fill="#e6e6e6" font-family="monospace" font-size="12">    json={"user": "admin", "pwd": "***"},</text>
+  <text x="392" y="314" fill="#e6e6e6" font-family="monospace" font-size="12">)</text>
+  <text x="374" y="388" fill="#111827" font-size="14" font-weight="600">说明</text>
+  <text x="374" y="416" fill="#374151" font-size="13">代码块与正文中的空格、缩进均被原样保留，</text>
+  <text x="374" y="440" fill="#374151" font-size="13">不会因 Markdown 渲染而丢失（含行首缩进）。</text>
+</svg>
