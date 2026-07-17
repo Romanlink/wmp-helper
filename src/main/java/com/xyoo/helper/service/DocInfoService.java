@@ -2,10 +2,10 @@ package com.xyoo.helper.service;
 
 import com.xyoo.helper.entity.DocHistory;
 import com.xyoo.helper.entity.DocInfo;
-import com.xyoo.helper.entity.SysMenu;
+import com.xyoo.helper.entity.SysModule;
 import com.xyoo.helper.repository.DocHistoryRepository;
 import com.xyoo.helper.repository.DocInfoRepository;
-import com.xyoo.helper.repository.SysMenuRepository;
+import com.xyoo.helper.repository.SysModuleRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,11 +27,11 @@ public class DocInfoService {
 
     private final DocInfoRepository docInfoRepository;
     private final DocHistoryRepository docHistoryRepository;
-    private final SysMenuRepository sysMenuRepository;
+    private final SysModuleRepository sysMenuRepository;
 
     public DocInfoService(DocInfoRepository docInfoRepository,
                           DocHistoryRepository docHistoryRepository,
-                          SysMenuRepository sysMenuRepository) {
+                          SysModuleRepository sysMenuRepository) {
         this.docInfoRepository = docInfoRepository;
         this.docHistoryRepository = docHistoryRepository;
         this.sysMenuRepository = sysMenuRepository;
@@ -40,17 +40,45 @@ public class DocInfoService {
     // ==================== 查询 ====================
 
     /**
-     * 根据所属菜单查询展示的文档列表；menuId 为 null 时返回全部可见文档
+     * 根据所属菜单查询展示的文档列表；moduleId 为 null 时返回全部可见文档
      */
     @Transactional(readOnly = true)
-    public List<DocInfo> listByMenuId(Long menuId) {
+    public List<DocInfo> listByModuleId(Long moduleId) {
         List<DocInfo> docs;
-        if (menuId == null) {
+        if (moduleId == null) {
             docs = docInfoRepository.findByIsVisibleOrderByCreateTimeDesc(true);
         } else {
-            docs = docInfoRepository.findByMenuIdAndIsVisibleOrderByCreateTimeDesc(menuId, true);
+            docs = docInfoRepository.findByModuleIdAndIsVisibleOrderByCreateTimeDesc(moduleId, true);
         }
-        fillMenuNames(docs);
+        fillModuleNames(docs);
+        return docs;
+    }
+
+    /**
+     * 根据所属菜单查询当前角色可见的展示文档列表（RBAC 过滤）
+     * <p>
+     * allowedModuleIds 为当前登录人角色可访问的菜单ID集合；为空表示无权限，返回空列表。
+     * 若显式传入 moduleId，则仅当该 moduleId 在允许集合内时才查询，否则返回空。
+     * </p>
+     *
+     * @param moduleId         所属菜单ID（可为 null，表示查允许集合内的全部菜单）
+     * @param allowedModuleIds 角色可见菜单ID集合
+     */
+    @Transactional(readOnly = true)
+    public List<DocInfo> listByModuleId(Long moduleId, Set<Long> allowedModuleIds) {
+        if (allowedModuleIds == null || allowedModuleIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<DocInfo> docs;
+        if (moduleId == null) {
+            docs = docInfoRepository.findByModuleIdInAndIsVisibleOrderByCreateTimeDesc(allowedModuleIds, true);
+        } else {
+            if (!allowedModuleIds.contains(moduleId)) {
+                return Collections.emptyList();
+            }
+            docs = docInfoRepository.findByModuleIdAndIsVisibleOrderByCreateTimeDesc(moduleId, true);
+        }
+        fillModuleNames(docs);
         return docs;
     }
 
@@ -74,6 +102,24 @@ public class DocInfoService {
     }
 
     /**
+     * 根据标签查询当前角色可见的展示文档列表（RBAC 过滤）
+     *
+     * @param tag            标签关键词
+     * @param allowedModuleIds 角色可见菜单ID集合；为空表示无权限，返回空列表
+     */
+    @Transactional(readOnly = true)
+    public List<DocInfo> listByTag(String tag, Set<Long> allowedModuleIds) {
+        if (allowedModuleIds == null || allowedModuleIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        if (tag == null || tag.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        return docInfoRepository.findByDocTagsContainingAndModuleIdInAndIsVisibleOrderByCreateTimeDesc(
+                tag.trim(), allowedModuleIds, true);
+    }
+
+    /**
      * 模糊搜索：匹配文档标题、标签、内容
      */
     @Transactional(readOnly = true)
@@ -82,7 +128,26 @@ public class DocInfoService {
             return Collections.emptyList();
         }
         List<DocInfo> docs = docInfoRepository.searchByKeyword(keyword.trim(), true);
-        fillMenuNames(docs);
+        fillModuleNames(docs);
+        return docs;
+    }
+
+    /**
+     * 全局搜索：模糊匹配标题/标签/内容，仅返回当前角色可见菜单下的展示文档（RBAC 过滤）
+     *
+     * @param keyword        搜索关键词
+     * @param allowedModuleIds 角色可见菜单ID集合；为空表示无权限，返回空列表
+     */
+    @Transactional(readOnly = true)
+    public List<DocInfo> search(String keyword, Set<Long> allowedModuleIds) {
+        if (allowedModuleIds == null || allowedModuleIds.isEmpty()) {
+            return Collections.emptyList();
+        }
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<DocInfo> docs = docInfoRepository.searchByKeywordAndModuleIds(keyword.trim(), allowedModuleIds, true);
+        fillModuleNames(docs);
         return docs;
     }
 
@@ -157,8 +222,8 @@ public class DocInfoService {
             }
             existing.setDocContent(content);
         }
-        if (doc.getMenuId() != null) {
-            existing.setMenuId(doc.getMenuId());
+        if (doc.getModuleId() != null) {
+            existing.setModuleId(doc.getModuleId());
         }
         if (doc.getOriginalPath() != null) {
             existing.setOriginalPath(doc.getOriginalPath());
@@ -235,18 +300,18 @@ public class DocInfoService {
     /**
      * 批次填充文档的所属菜单名称
      */
-    private void fillMenuNames(List<DocInfo> docs) {
+    private void fillModuleNames(List<DocInfo> docs) {
         if (docs == null || docs.isEmpty()) return;
-        Set<Long> menuIds = docs.stream()
-                .map(DocInfo::getMenuId)
+        Set<Long> moduleIds = docs.stream()
+                .map(DocInfo::getModuleId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
-        if (menuIds.isEmpty()) return;
-        Map<Long, String> menuNameMap = sysMenuRepository.findAllById(menuIds).stream()
-                .collect(Collectors.toMap(SysMenu::getId, SysMenu::getMenuName, (a, b) -> a));
+        if (moduleIds.isEmpty()) return;
+        Map<Long, String> moduleNameMap = sysMenuRepository.findAllById(moduleIds).stream()
+                .collect(Collectors.toMap(SysModule::getId, SysModule::getModuleName, (a, b) -> a));
         for (DocInfo doc : docs) {
-            if (doc.getMenuId() != null) {
-                doc.setMenuName(menuNameMap.getOrDefault(doc.getMenuId(), "—"));
+            if (doc.getModuleId() != null) {
+                doc.setModuleName(moduleNameMap.getOrDefault(doc.getModuleId(), "—"));
             }
         }
     }

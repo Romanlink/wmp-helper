@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -25,10 +26,10 @@ public interface DocInfoRepository extends JpaRepository<DocInfo, Long> {
     /**
      * 根据所属菜单查询展示的文档列表，按创建时间倒序
      *
-     * @param menuId    所属菜单ID
+     * @param moduleId    所属菜单ID
      * @param isVisible 是否展示
      */
-    List<DocInfo> findByMenuIdAndIsVisibleOrderByCreateTimeDesc(Long menuId, Boolean isVisible);
+    List<DocInfo> findByModuleIdAndIsVisibleOrderByCreateTimeDesc(Long moduleId, Boolean isVisible);
 
     /**
      * 根据业务文档ID查询
@@ -44,6 +45,41 @@ public interface DocInfoRepository extends JpaRepository<DocInfo, Long> {
      * @param isVisible 是否展示
      */
     List<DocInfo> findByDocTagsContainingAndIsVisibleOrderByCreateTimeDesc(String tag, Boolean isVisible);
+
+    /**
+     * 根据所属菜单集合查询展示的文档列表（RBAC 过滤），按创建时间倒序
+     *
+     * @param moduleIds   允许的菜单ID集合（角色可见菜单）
+     * @param isVisible 是否展示
+     */
+    List<DocInfo> findByModuleIdInAndIsVisibleOrderByCreateTimeDesc(Collection<Long> moduleIds, Boolean isVisible);
+
+    /**
+     * 根据标签模糊查询展示的文档，且所属菜单在允许集合内（RBAC 过滤），按创建时间倒序
+     *
+     * @param tag       标签关键词
+     * @param moduleIds   允许的菜单ID集合（角色可见菜单）
+     * @param isVisible 是否展示
+     */
+    List<DocInfo> findByDocTagsContainingAndModuleIdInAndIsVisibleOrderByCreateTimeDesc(String tag,
+                                                                                      Collection<Long> moduleIds,
+                                                                                      Boolean isVisible);
+
+    /**
+     * 模糊搜索：根据文档标题、标签、内容匹配（仅展示且所属菜单在允许集合内）
+     *
+     * @param keyword   搜索关键词
+     * @param moduleIds   允许的菜单ID集合（角色可见菜单）
+     * @param isVisible 是否展示
+     */
+    @Query("SELECT d FROM DocInfo d WHERE d.isVisible = :isVisible AND d.moduleId IN :moduleIds AND (" +
+           "d.docTitle LIKE %:keyword% OR " +
+           "d.docTags LIKE %:keyword% OR " +
+           "d.docContent LIKE %:keyword%) " +
+           "ORDER BY d.createTime DESC")
+    List<DocInfo> searchByKeywordAndModuleIds(@Param("keyword") String keyword,
+                                            @Param("moduleIds") Collection<Long> moduleIds,
+                                            @Param("isVisible") Boolean isVisible);
 
     /**
      * 模糊搜索：根据文档标题、标签、内容匹配（仅展示的文档）

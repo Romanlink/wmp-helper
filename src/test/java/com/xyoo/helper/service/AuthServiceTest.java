@@ -1,11 +1,11 @@
 package com.xyoo.helper.service;
 
-import com.xyoo.helper.entity.SysMenu;
+import com.xyoo.helper.entity.SysModule;
 import com.xyoo.helper.entity.SysRole;
-import com.xyoo.helper.entity.SysRoleMenu;
+import com.xyoo.helper.entity.SysRoleRelation;
 import com.xyoo.helper.entity.SysUser;
-import com.xyoo.helper.repository.SysMenuRepository;
-import com.xyoo.helper.repository.SysRoleMenuRepository;
+import com.xyoo.helper.repository.SysModuleRepository;
+import com.xyoo.helper.repository.SysRoleRelationRepository;
 import com.xyoo.helper.repository.SysRoleRepository;
 import com.xyoo.helper.repository.SysUserRepository;
 import com.xyoo.helper.util.JwtUtil;
@@ -43,8 +43,8 @@ class AuthServiceTest {
 
     @Mock private SysUserRepository userRepository;
     @Mock private SysRoleRepository roleRepository;
-    @Mock private SysRoleMenuRepository roleMenuRepository;
-    @Mock private SysMenuRepository menuRepository;
+    @Mock private SysRoleRelationRepository roleMenuRepository;
+    @Mock private SysModuleRepository menuRepository;
     @Mock private StringRedisTemplate redisTemplate;
     @Mock private ValueOperations<String, String> valueOps;
 
@@ -186,17 +186,17 @@ class AuthServiceTest {
     @DisplayName("getMenusByUserRole 按角色聚合菜单")
     void getMenusByUserRole() {
         given(roleMenuRepository.findByRoleId(2L))
-                .willReturn(Collections.singletonList(new SysRoleMenu(2L, 10L)));
-        SysMenu menu = new SysMenu();
+                .willReturn(Collections.singletonList(new SysRoleRelation(2L, 10L)));
+        SysModule menu = new SysModule();
         menu.setId(10L);
-        menu.setMenuName("用户手册");
+        menu.setModuleName("用户手册");
         given(menuRepository.findAllById(Collections.singletonList(10L)))
                 .willReturn(Collections.singletonList(menu));
 
-        List<SysMenu> menus = authService.getMenusByUserRole(2L);
+        List<SysModule> menus = authService.getMenusByUserRole(2L);
 
         assertThat(menus).hasSize(1);
-        assertThat(menus.get(0).getMenuName()).isEqualTo("用户手册");
+        assertThat(menus.get(0).getModuleName()).isEqualTo("用户手册");
     }
 
     @Test

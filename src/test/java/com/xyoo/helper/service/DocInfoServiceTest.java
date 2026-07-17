@@ -2,10 +2,10 @@ package com.xyoo.helper.service;
 
 import com.xyoo.helper.entity.DocHistory;
 import com.xyoo.helper.entity.DocInfo;
-import com.xyoo.helper.entity.SysMenu;
+import com.xyoo.helper.entity.SysModule;
 import com.xyoo.helper.repository.DocHistoryRepository;
 import com.xyoo.helper.repository.DocInfoRepository;
-import com.xyoo.helper.repository.SysMenuRepository;
+import com.xyoo.helper.repository.SysModuleRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,7 +37,7 @@ class DocInfoServiceTest {
 
     @Mock private DocInfoRepository docInfoRepository;
     @Mock private DocHistoryRepository docHistoryRepository;
-    @Mock private SysMenuRepository sysMenuRepository;
+    @Mock private SysModuleRepository sysMenuRepository;
 
     @InjectMocks private DocInfoService docInfoService;
 
@@ -47,7 +47,7 @@ class DocInfoServiceTest {
         DocInfo d = new DocInfo();
         d.setId(1L);
         d.setDocId("DOC-OLD");
-        d.setMenuId(10L);
+        d.setModuleId(10L);
         d.setDocTitle("原标题");
         d.setDocTags("a|b");
         d.setDocContent("原内容");
@@ -64,30 +64,30 @@ class DocInfoServiceTest {
     // ==================== 查询 ====================
 
     @Test
-    @DisplayName("listByMenuId(null) 查询全部可见文档并填充菜单名")
-    void listByMenuId_all() {
+    @DisplayName("listByModuleId(null) 查询全部可见文档并填充菜单名")
+    void listByModuleId_all() {
         DocInfo d = sampleDoc();
         given(docInfoRepository.findByIsVisibleOrderByCreateTimeDesc(true))
                 .willReturn(Collections.singletonList(d));
-        SysMenu menu = new SysMenu();
+        SysModule menu = new SysModule();
         menu.setId(10L);
-        menu.setMenuName("用户手册");
+        menu.setModuleName("用户手册");
         given(sysMenuRepository.findAllById(any())).willReturn(Collections.singletonList(menu));
 
-        List<DocInfo> result = docInfoService.listByMenuId(null);
+        List<DocInfo> result = docInfoService.listByModuleId(null);
 
         assertThat(result).hasSize(1);
-        assertThat(result.get(0).getMenuName()).isEqualTo("用户手册");
+        assertThat(result.get(0).getModuleName()).isEqualTo("用户手册");
         verify(docInfoRepository).findByIsVisibleOrderByCreateTimeDesc(true);
     }
 
     @Test
-    @DisplayName("listByMenuId(menuId) 按菜单过滤")
-    void listByMenuId_byMenu() {
-        given(docInfoRepository.findByMenuIdAndIsVisibleOrderByCreateTimeDesc(5L, true))
+    @DisplayName("listByModuleId(moduleId) 按菜单过滤")
+    void listByModuleId_byMenu() {
+        given(docInfoRepository.findByModuleIdAndIsVisibleOrderByCreateTimeDesc(5L, true))
                 .willReturn(Collections.emptyList());
-        assertThat(docInfoService.listByMenuId(5L)).isEmpty();
-        verify(docInfoRepository).findByMenuIdAndIsVisibleOrderByCreateTimeDesc(5L, true);
+        assertThat(docInfoService.listByModuleId(5L)).isEmpty();
+        verify(docInfoRepository).findByModuleIdAndIsVisibleOrderByCreateTimeDesc(5L, true);
     }
 
     @Test
@@ -125,13 +125,13 @@ class DocInfoServiceTest {
     void search_normal() {
         DocInfo d = sampleDoc();
         given(docInfoRepository.searchByKeyword("关键字", true)).willReturn(Collections.singletonList(d));
-        SysMenu menu = new SysMenu();
+        SysModule menu = new SysModule();
         menu.setId(10L);
-        menu.setMenuName("用户手册");
+        menu.setModuleName("用户手册");
         given(sysMenuRepository.findAllById(any())).willReturn(Collections.singletonList(menu));
 
         List<DocInfo> r = docInfoService.search("关键字");
-        assertThat(r.get(0).getMenuName()).isEqualTo("用户手册");
+        assertThat(r.get(0).getModuleName()).isEqualTo("用户手册");
     }
 
     @Test
@@ -159,7 +159,7 @@ class DocInfoServiceTest {
         given(docHistoryRepository.save(any(DocHistory.class))).willAnswer(i -> i.getArgument(0));
 
         DocInfo input = new DocInfo();
-        input.setMenuId(10L);
+        input.setModuleId(10L);
         input.setDocTitle("新文档");
         input.setDocContent(repeat("x", 6000));
 

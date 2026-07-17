@@ -40,9 +40,9 @@ public class DocInfo implements Serializable {
     private String attachPwd;
 
     @NotNull(message = "所属菜单不能为空")
-    @Column(name = "menu_id", nullable = false)
-    @Comment("所属菜单ID，关联 sys_menu.id")
-    private Long menuId;
+    @Column(name = "module_id", nullable = false)
+    @Comment("所属菜单ID，关联 sys_module.id")
+    private Long moduleId;
 
     @NotBlank(message = "文档标题不能为空")
     @Column(name = "doc_title", nullable = false, length = 256)
@@ -73,7 +73,7 @@ public class DocInfo implements Serializable {
 
     @Transient
     @Comment("所属菜单名称（关联查询填充，不持久化）")
-    private String menuName;
+    private String moduleName;
 
     // ==================== JPA 生命周期回调 ====================
 
@@ -125,12 +125,12 @@ public class DocInfo implements Serializable {
         this.attachPwd = attachPwd;
     }
 
-    public Long getMenuId() {
-        return menuId;
+    public Long getModuleId() {
+        return moduleId;
     }
 
-    public void setMenuId(Long menuId) {
-        this.menuId = menuId;
+    public void setModuleId(Long moduleId) {
+        this.moduleId = moduleId;
     }
 
     public String getDocTitle() {
@@ -181,11 +181,11 @@ public class DocInfo implements Serializable {
         this.updateTime = updateTime;
     }
 
-    public String getMenuName() {
-        return menuName;
+    public String getModuleName() {
+        return moduleName;
     }
 
-    public void setMenuName(String menuName) {
-        this.menuName = menuName;
+    public void setModuleName(String moduleName) {
+        this.moduleName = moduleName;
     }
 }

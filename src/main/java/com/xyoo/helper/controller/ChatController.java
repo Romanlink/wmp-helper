@@ -1,5 +1,6 @@
 package com.xyoo.helper.controller;
 
+import com.xyoo.helper.common.BaseController;
 import com.xyoo.helper.service.ChatService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,7 +24,7 @@ import java.nio.charset.StandardCharsets;
  */
 @RestController
 @RequestMapping("/api/chat")
-public class ChatController {
+public class ChatController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(ChatController.class);
 

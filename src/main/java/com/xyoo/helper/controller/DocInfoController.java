@@ -1,8 +1,11 @@
 package com.xyoo.helper.controller;
 
+import com.xyoo.helper.common.BaseController;
+import com.xyoo.helper.common.LoginUser;
 import com.xyoo.helper.common.Result;
 import com.xyoo.helper.entity.DocHistory;
 import com.xyoo.helper.entity.DocInfo;
+import com.xyoo.helper.service.AuthService;
 import com.xyoo.helper.service.DocInfoService;
 import com.xyoo.helper.util.FileEncryptionUtil;
 import com.xyoo.helper.util.PdfContentParser;
@@ -26,8 +29,10 @@ import java.net.URLEncoder;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -35,7 +40,7 @@ import java.util.UUID;
  *
  * <pre>
  * POST   /api/docs/upload            — 上传 PDF 文件，返回完整路径
- * GET    /api/docs?menuId=1          — 根据所属菜单查询文档列表；不传 menuId 返回全部
+ * GET    /api/docs?moduleId=1          — 根据所属菜单查询文档列表；不传 moduleId 返回全部
  * GET    /api/docs/search?keyword=x  — 模糊搜索（标题+标签+内容）
  * GET    /api/docs/byTag?tag=x       — 根据标签查询
  * GET    /api/docs/{docId}           — 根据 docId 查询详情
@@ -49,17 +54,19 @@ import java.util.UUID;
  */
 @RestController
 @RequestMapping("/api/docs")
-public class DocInfoController {
+public class DocInfoController extends BaseController {
 
     private static final Logger log = LoggerFactory.getLogger(DocInfoController.class);
 
     private final DocInfoService docInfoService;
+    private final AuthService authService;
 
     @Value("${helper.upload.dir:./uploads}")
     private String uploadDir;
 
-    public DocInfoController(DocInfoService docInfoService) {
+    public DocInfoController(DocInfoService docInfoService, AuthService authService) {
         this.docInfoService = docInfoService;
+        this.authService = authService;
     }
 
     // ================================================================
@@ -129,16 +136,29 @@ public class DocInfoController {
         return Result.success(result);
     }
 
+    /**
+     * 解析当前登录人角色可访问的菜单ID集合。
+     * <p>未登录、无角色或上下文缺失时返回空集，对应「无可见文档」。</p>
+     */
+    private Set<Long> resolveAllowedModuleIds() {
+        LoginUser cur = getCurInfo();
+        if (cur == null || cur.getRoleId() == null) {
+            return Collections.emptySet();
+        }
+        return authService.findModuleIdsByRole(cur.getRoleId());
+    }
+
     // ================================================================
     // 查询接口
     // ================================================================
 
     /**
-     * 根据所属菜单查询文档列表（仅展示的）；不传 menuId 时返回全部可见文档
+     * 根据所属菜单查询当前角色可见的文档列表（仅展示的）；不传 moduleId 时返回允许菜单集合内的全部可见文档
      */
     @GetMapping
-    public Result<List<DocInfo>> listByMenu(@RequestParam(required = false) Long menuId) {
-        List<DocInfo> list = docInfoService.listByMenuId(menuId);
+    public Result<List<DocInfo>> listByMenu(@RequestParam(required = false) Long moduleId) {
+        Set<Long> allowed = resolveAllowedModuleIds();
+        List<DocInfo> list = docInfoService.listByModuleId(moduleId, allowed);
         return Result.success(list);
     }
 
@@ -153,20 +173,22 @@ public class DocInfoController {
     }
 
     /**
-     * 根据标签查询文档列表（仅展示的）
+     * 根据标签查询当前角色可见的文档列表（仅展示的）
      */
     @GetMapping("/byTag")
     public Result<List<DocInfo>> listByTag(@RequestParam String tag) {
-        List<DocInfo> list = docInfoService.listByTag(tag);
+        Set<Long> allowed = resolveAllowedModuleIds();
+        List<DocInfo> list = docInfoService.listByTag(tag, allowed);
         return Result.success(list);
     }
 
     /**
-     * 模糊搜索：匹配文档标题、标签、内容（仅展示的）
+     * 全局搜索：匹配文档标题、标签、内容（仅展示的，且属于当前角色可见菜单）
      */
     @GetMapping("/search")
     public Result<List<DocInfo>> search(@RequestParam String keyword) {
-        List<DocInfo> list = docInfoService.search(keyword);
+        Set<Long> allowed = resolveAllowedModuleIds();
+        List<DocInfo> list = docInfoService.search(keyword, allowed);
         return Result.success(list);
     }
 

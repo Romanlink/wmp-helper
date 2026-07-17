@@ -8,14 +8,14 @@
 -- ============================================================
 
 -- ------------------------------------------------------------
--- 1. 系统菜单表 sys_menu
+-- 1. 系统菜单表 sys_module
 -- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `sys_menu` (
+CREATE TABLE IF NOT EXISTS `sys_module` (
     `id`            BIGINT          NOT NULL AUTO_INCREMENT    COMMENT '菜单ID，主键',
     `parent_id`     BIGINT          NOT NULL DEFAULT 0         COMMENT '父菜单ID，0表示顶级菜单',
-    `menu_name`     VARCHAR(32)     NOT NULL                   COMMENT '菜单名称',
-    `menu_path`     VARCHAR(128)    DEFAULT ''                 COMMENT '菜单路由路径/URL',
-    `menu_icon`     VARCHAR(64)     DEFAULT ''                 COMMENT '菜单图标（CSS类名或图标名称）',
+    `module_name`     VARCHAR(32)     NOT NULL                   COMMENT '菜单名称',
+    `module_path`     VARCHAR(128)    DEFAULT ''                 COMMENT '菜单路由路径/URL',
+    `module_icon`     VARCHAR(64)     DEFAULT ''                 COMMENT '菜单图标（CSS类名或图标名称）',
     `sort_order`    INT             NOT NULL DEFAULT 0         COMMENT '排序序号，数值越小越靠前',
     `is_visible`    TINYINT(1)      NOT NULL DEFAULT 1         COMMENT '是否展示：0=隐藏，1=展示',
     `create_time`   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS `sys_menu` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='系统菜单表';
 
 -- 初始化菜单数据（幂等，主键重复则跳过）
-INSERT IGNORE INTO `sys_menu` (`id`, `parent_id`, `menu_name`, `menu_path`, `menu_icon`, `sort_order`, `is_visible`) VALUES
+INSERT IGNORE INTO `sys_module` (`id`, `parent_id`, `module_name`, `module_path`, `module_icon`, `sort_order`, `is_visible`) VALUES
 (100001, 0, '组合宝',    '/', '', 1,  1),
 (100002, 0, '理财',      '/', '', 2,  1),
 (100003, 0, '基金',      '/', '', 3,  1),
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS `doc_info` (
     `doc_id`        VARCHAR(32)     NOT NULL                   COMMENT '文档业务ID（UUID）',
     `original_path` VARCHAR(512)    DEFAULT ''                 COMMENT '原始文件路径（PDF等本地文件）',
     `attach_pwd`    VARCHAR(256)    DEFAULT ''                 COMMENT '附件加密密码（AES-GCM）',
-    `menu_id`       BIGINT          NOT NULL                   COMMENT '所属菜单ID，关联 sys_menu.id',
+    `module_id`       BIGINT          NOT NULL                   COMMENT '所属菜单ID，关联 sys_module.id',
     `doc_title`     VARCHAR(256)    NOT NULL                   COMMENT '文档标题',
     `doc_tags`      VARCHAR(512)    DEFAULT ''                 COMMENT '文档标签，多个用竖线分隔',
     `doc_content`   TEXT                                       COMMENT '文档内容（Markdown 语法）',
@@ -57,7 +57,7 @@ CREATE TABLE IF NOT EXISTS `doc_info` (
     `update_time`   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
     UNIQUE INDEX `uk_doc_id` (`doc_id`),
-    INDEX `idx_menu_id` (`menu_id`),
+    INDEX `idx_module_id` (`module_id`),
     INDEX `idx_is_visible` (`is_visible`),
     INDEX `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='文档信息表';
@@ -135,14 +135,21 @@ CREATE TABLE IF NOT EXISTS `sys_user` (
 -- 初始化用户数据由 DataInitializer 在 Java 代码中创建（使用 BCrypt 编码密码）
 
 -- ------------------------------------------------------------
--- 7. 角色-菜单关联表 sys_role_menu
+-- 7. 角色-菜单关联表 sys_role_relation
 -- ------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `sys_role_menu` (
+CREATE TABLE IF NOT EXISTS `sys_role_relation` (
     `role_id`  BIGINT NOT NULL COMMENT '角色ID，关联 sys_role.id',
-    `menu_id`  BIGINT NOT NULL COMMENT '菜单ID，关联 sys_menu.id',
-    PRIMARY KEY (`role_id`, `menu_id`)
+    `module_id`  BIGINT NOT NULL COMMENT '菜单ID，关联 sys_module.id',
+    PRIMARY KEY (`role_id`, `module_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='角色-菜单关联表';
 
 -- 管理员角色关联所有菜单
-INSERT IGNORE INTO `sys_role_menu` (`role_id`, `menu_id`)
-SELECT 1, `id` FROM `sys_menu`;
+INSERT IGNORE INTO `sys_role_relation` (`role_id`, `module_id`)
+SELECT 1, `id` FROM `sys_module`;
+
+-- 编辑员、访客角色同样关联所有菜单（角色菜单权限的细化可在 sys_role_relation 中调整）
+INSERT IGNORE INTO `sys_role_relation` (`role_id`, `module_id`)
+SELECT 2, `id` FROM `sys_module`;
+
+INSERT IGNORE INTO `sys_role_relation` (`role_id`, `module_id`)
+SELECT 3, `id` FROM `sys_module`;

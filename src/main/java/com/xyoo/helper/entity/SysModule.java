@@ -18,12 +18,12 @@ import java.time.LocalDateTime;
  * </p>
  */
 @Entity
-@Table(name = "sys_menu", indexes = {
+@Table(name = "sys_module", indexes = {
         @Index(name = "idx_parent_id", columnList = "parent_id"),
         @Index(name = "idx_is_visible", columnList = "is_visible"),
         @Index(name = "idx_sort_order", columnList = "sort_order")
 })
-public class SysMenu implements Serializable {
+public class SysModule implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -41,19 +41,19 @@ public class SysMenu implements Serializable {
     @NotBlank(message = "菜单名称不能为空")
     @Size(min = 4, max = 6, message = "菜单名称必须为4-6个字符")
     @Pattern(regexp = "^[\\u4e00-\\u9fa5]+$", message = "菜单名称必须为中文汉字")
-    @Column(name = "menu_name", nullable = false, length = 32)
+    @Column(name = "module_name", nullable = false, length = 32)
     @Comment("菜单名称，4-6个中文汉字")
-    private String menuName;
+    private String moduleName;
 
     /** 菜单路由路径 */
-    @Column(name = "menu_path", length = 128)
+    @Column(name = "module_path", length = 128)
     @Comment("菜单路由路径/URL")
-    private String menuPath = "";
+    private String modulePath = "";
 
     /** 菜单图标 */
-    @Column(name = "menu_icon", length = 64)
+    @Column(name = "module_icon", length = 64)
     @Comment("菜单图标")
-    private String menuIcon = "";
+    private String moduleIcon = "";
 
     /** 排序序号，数值越小越靠前 */
     @Column(name = "sort_order", nullable = false)
@@ -114,28 +114,28 @@ public class SysMenu implements Serializable {
         this.parentId = parentId;
     }
 
-    public String getMenuName() {
-        return menuName;
+    public String getModuleName() {
+        return moduleName;
     }
 
-    public void setMenuName(String menuName) {
-        this.menuName = menuName;
+    public void setModuleName(String moduleName) {
+        this.moduleName = moduleName;
     }
 
-    public String getMenuPath() {
-        return menuPath;
+    public String getModulePath() {
+        return modulePath;
     }
 
-    public void setMenuPath(String menuPath) {
-        this.menuPath = menuPath;
+    public void setModulePath(String modulePath) {
+        this.modulePath = modulePath;
     }
 
-    public String getMenuIcon() {
-        return menuIcon;
+    public String getModuleIcon() {
+        return moduleIcon;
     }
 
-    public void setMenuIcon(String menuIcon) {
-        this.menuIcon = menuIcon;
+    public void setModuleIcon(String moduleIcon) {
+        this.moduleIcon = moduleIcon;
     }
 
     public Integer getSortOrder() {
@@ -172,11 +172,11 @@ public class SysMenu implements Serializable {
 
     @Override
     public String toString() {
-        return "SysMenu{" +
+        return "SysModule{" +
                 "id=" + id +
                 ", parentId=" + parentId +
-                ", menuName='" + menuName + '\'' +
-                ", menuPath='" + menuPath + '\'' +
+                ", moduleName='" + moduleName + '\'' +
+                ", modulePath='" + modulePath + '\'' +
                 ", sortOrder=" + sortOrder +
                 ", isVisible=" + isVisible +
                 '}';

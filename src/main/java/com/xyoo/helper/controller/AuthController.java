@@ -1,7 +1,8 @@
 package com.xyoo.helper.controller;
 
+import com.xyoo.helper.common.BaseController;
 import com.xyoo.helper.common.Result;
-import com.xyoo.helper.entity.SysMenu;
+import com.xyoo.helper.entity.SysModule;
 import com.xyoo.helper.entity.SysUser;
 import com.xyoo.helper.service.AuthService;
 import org.springframework.web.bind.annotation.*;
@@ -14,7 +15,7 @@ import java.util.*;
  */
 @RestController
 @RequestMapping("/api/auth")
-public class AuthController {
+public class AuthController extends BaseController {
 
     private final AuthService authService;
 
@@ -86,13 +87,13 @@ public class AuthController {
 
         // 查询角色名称
         // 查询可访问菜单
-        List<SysMenu> menus = authService.getMenusByUserRole(user.getRoleId());
+        List<SysModule> menus = authService.getMenusByUserRole(user.getRoleId());
         List<Map<String, Object>> menuList = new ArrayList<>();
-        for (SysMenu menu : menus) {
+        for (SysModule menu : menus) {
             Map<String, Object> m = new HashMap<>();
             m.put("id", menu.getId());
-            m.put("menuName", menu.getMenuName());
-            m.put("menuPath", menu.getMenuPath());
+            m.put("moduleName", menu.getModuleName());
+            m.put("modulePath", menu.getModulePath());
             m.put("parentId", menu.getParentId());
             m.put("sortOrder", menu.getSortOrder());
             menuList.add(m);

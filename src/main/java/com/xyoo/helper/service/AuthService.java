@@ -1,11 +1,12 @@
 package com.xyoo.helper.service;
 
-import com.xyoo.helper.entity.SysMenu;
+import com.xyoo.helper.entity.SysModule;
 import com.xyoo.helper.entity.SysRole;
-import com.xyoo.helper.entity.SysRoleMenu;
+import com.xyoo.helper.entity.SysRoleRelation;
+import com.xyoo.helper.common.LoginUser;
 import com.xyoo.helper.entity.SysUser;
-import com.xyoo.helper.repository.SysMenuRepository;
-import com.xyoo.helper.repository.SysRoleMenuRepository;
+import com.xyoo.helper.repository.SysModuleRepository;
+import com.xyoo.helper.repository.SysRoleRelationRepository;
 import com.xyoo.helper.repository.SysRoleRepository;
 import com.xyoo.helper.repository.SysUserRepository;
 import com.xyoo.helper.util.JwtUtil;
@@ -35,16 +36,16 @@ public class AuthService {
 
     private final SysUserRepository userRepository;
     private final SysRoleRepository roleRepository;
-    private final SysRoleMenuRepository roleMenuRepository;
-    private final SysMenuRepository menuRepository;
+    private final SysRoleRelationRepository roleMenuRepository;
+    private final SysModuleRepository menuRepository;
     private final StringRedisTemplate redisTemplate;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public AuthService(SysUserRepository userRepository,
                        SysRoleRepository roleRepository,
-                       SysRoleMenuRepository roleMenuRepository,
-                       SysMenuRepository menuRepository,
+                       SysRoleRelationRepository roleMenuRepository,
+                       SysModuleRepository menuRepository,
                        StringRedisTemplate redisTemplate) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
@@ -152,23 +153,59 @@ public class AuthService {
     }
 
     /**
+     * 根据 Token 构建当前登录用户上下文（含角色信息），供拦截器写入请求属性。
+     */
+    public Optional<LoginUser> getLoginUser(String token) {
+        return getCurrentUser(token).map(user -> {
+            LoginUser loginUser = new LoginUser();
+            loginUser.setUserId(user.getId());
+            loginUser.setUsername(user.getUsername());
+            loginUser.setRealName(user.getRealName());
+            loginUser.setRoleId(user.getRoleId());
+            if (user.getRoleId() != null) {
+                roleRepository.findById(user.getRoleId()).ifPresent(role -> {
+                    loginUser.setRoleName(role.getRoleName());
+                    loginUser.setRoleCode(role.getRoleCode());
+                });
+            }
+            return loginUser;
+        });
+    }
+
+    /**
+     * 获取角色可访问的菜单ID集合（用于 RBAC 行级过滤）。
+     * <p>菜单列表、文档列表、全局搜索等查询接口据此过滤「当前角色可见」的数据。</p>
+     *
+     * @param roleId 角色ID
+     * @return 该角色关联的菜单ID集合；roleId 为 null 时返回空集合
+     */
+    public Set<Long> findModuleIdsByRole(Long roleId) {
+        if (roleId == null) {
+            return Collections.emptySet();
+        }
+        return roleMenuRepository.findByRoleId(roleId).stream()
+                .map(SysRoleRelation::getModuleId)
+                .collect(Collectors.toSet());
+    }
+
+    /**
      * 获取用户可访问的菜单列表
      */
-    public List<SysMenu> getMenusByUserRole(Long roleId) {
+    public List<SysModule> getMenusByUserRole(Long roleId) {
         if (roleId == null) {
             return Collections.emptyList();
         }
 
-        List<SysRoleMenu> roleMenus = roleMenuRepository.findByRoleId(roleId);
+        List<SysRoleRelation> roleMenus = roleMenuRepository.findByRoleId(roleId);
         if (roleMenus.isEmpty()) {
             return Collections.emptyList();
         }
 
-        List<Long> menuIds = roleMenus.stream()
-                .map(SysRoleMenu::getMenuId)
+        List<Long> moduleIds = roleMenus.stream()
+                .map(SysRoleRelation::getModuleId)
                 .collect(Collectors.toList());
 
-        return menuRepository.findAllById(menuIds);
+        return menuRepository.findAllById(moduleIds);
     }
 
     // ==================== 内部类 ====================

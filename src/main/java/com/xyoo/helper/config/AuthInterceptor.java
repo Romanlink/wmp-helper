@@ -1,5 +1,6 @@
 package com.xyoo.helper.config;
 
+import com.xyoo.helper.common.LoginUser;
 import com.xyoo.helper.service.AuthService;
 import com.xyoo.helper.util.JwtUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -76,7 +77,16 @@ public class AuthInterceptor implements HandlerInterceptor {
             return false;
         }
 
+        // 校验通过：将当前登录人信息写入请求属性，供 BaseController.getCurInfo() 获取
+        authService.getLoginUser(token).ifPresent(user -> request.setAttribute(LoginUser.REQUEST_ATTR, user));
+
         return true;
+    }
+
+    @Override
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) {
+        // 显式清理请求属性，避免线程复用时串号（请求属性本就随请求销毁，此处更稳妥）
+        request.removeAttribute(LoginUser.REQUEST_ATTR);
     }
 
     /**

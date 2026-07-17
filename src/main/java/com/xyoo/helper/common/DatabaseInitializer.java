@@ -41,18 +41,18 @@ public class DatabaseInitializer {
             // 验证数据库连接和表结构
             ResultSet rs = stmt.executeQuery(
                     "SELECT TABLE_NAME FROM information_schema.TABLES " +
-                    "WHERE TABLE_SCHEMA = 'helper' AND TABLE_NAME = 'sys_menu'"
+                    "WHERE TABLE_SCHEMA = 'helper' AND TABLE_NAME = 'sys_module'"
             );
 
             if (rs.next()) {
                 log.info("========================================");
                 log.info("  helper 数据库连接成功");
-                log.info("  sys_menu 表已就绪");
+                log.info("  sys_module 表已就绪");
                 log.info("========================================");
             } else {
                 log.info("========================================");
                 log.info("  helper 数据库连接成功");
-                log.info("  sys_menu 表将由 JPA 自动创建（ddl-auto=update）");
+                log.info("  sys_module 表将由 JPA 自动创建（ddl-auto=update）");
                 log.info("========================================");
             }
 

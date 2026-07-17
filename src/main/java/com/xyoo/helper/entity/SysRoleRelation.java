@@ -7,9 +7,9 @@ import java.io.Serializable;
  * 角色-菜单关联实体（多对多中间表）
  */
 @Entity
-@Table(name = "sys_role_menu")
-@IdClass(SysRoleMenu.PK.class)
-public class SysRoleMenu implements Serializable {
+@Table(name = "sys_role_relation")
+@IdClass(SysRoleRelation.PK.class)
+public class SysRoleRelation implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -18,51 +18,51 @@ public class SysRoleMenu implements Serializable {
     private Long roleId;
 
     @Id
-    @Column(name = "menu_id")
-    private Long menuId;
+    @Column(name = "module_id")
+    private Long moduleId;
 
-    public SysRoleMenu() {}
+    public SysRoleRelation() {}
 
-    public SysRoleMenu(Long roleId, Long menuId) {
+    public SysRoleRelation(Long roleId, Long moduleId) {
         this.roleId = roleId;
-        this.menuId = menuId;
+        this.moduleId = moduleId;
     }
 
     public Long getRoleId() { return roleId; }
     public void setRoleId(Long roleId) { this.roleId = roleId; }
 
-    public Long getMenuId() { return menuId; }
-    public void setMenuId(Long menuId) { this.menuId = menuId; }
+    public Long getModuleId() { return moduleId; }
+    public void setModuleId(Long moduleId) { this.moduleId = moduleId; }
 
     /** 复合主键类 */
     public static class PK implements Serializable {
         private Long roleId;
-        private Long menuId;
+        private Long moduleId;
 
         public PK() {}
 
-        public PK(Long roleId, Long menuId) {
+        public PK(Long roleId, Long moduleId) {
             this.roleId = roleId;
-            this.menuId = menuId;
+            this.moduleId = moduleId;
         }
 
         public Long getRoleId() { return roleId; }
         public void setRoleId(Long roleId) { this.roleId = roleId; }
 
-        public Long getMenuId() { return menuId; }
-        public void setMenuId(Long menuId) { this.menuId = menuId; }
+        public Long getModuleId() { return moduleId; }
+        public void setModuleId(Long moduleId) { this.moduleId = moduleId; }
 
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             PK pk = (PK) o;
-            return roleId.equals(pk.roleId) && menuId.equals(pk.menuId);
+            return roleId.equals(pk.roleId) && moduleId.equals(pk.moduleId);
         }
 
         @Override
         public int hashCode() {
-            return roleId.hashCode() * 31 + menuId.hashCode();
+            return roleId.hashCode() * 31 + moduleId.hashCode();
         }
     }
 }

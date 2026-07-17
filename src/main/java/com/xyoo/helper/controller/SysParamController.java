@@ -1,5 +1,6 @@
 package com.xyoo.helper.controller;
 
+import com.xyoo.helper.common.BaseController;
 import com.xyoo.helper.common.Result;
 import com.xyoo.helper.service.SysParamService;
 import org.springframework.web.bind.annotation.*;
@@ -16,7 +17,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/params")
-public class SysParamController {
+public class SysParamController extends BaseController {
 
     private final SysParamService sysParamService;
 

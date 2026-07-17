@@ -1,7 +1,7 @@
 package com.xyoo.helper.service;
 
-import com.xyoo.helper.entity.SysMenu;
-import com.xyoo.helper.repository.SysMenuRepository;
+import com.xyoo.helper.entity.SysModule;
+import com.xyoo.helper.repository.SysModuleRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,17 +24,17 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
- * SysMenuService 单元测试（纯 Mockito）。
+ * SysModuleService 单元测试（纯 Mockito）。
  * 覆盖列表/搜索/子菜单查询、新增默认值、编辑（含父菜单自引用校验）、级联删除。
  */
 @ExtendWith(MockitoExtension.class)
-class SysMenuServiceTest {
+class SysModuleServiceTest {
 
-    @Mock private SysMenuRepository menuRepository;
+    @Mock private SysModuleRepository menuRepository;
 
-    @InjectMocks private SysMenuService sysMenuService;
+    @InjectMocks private SysModuleService sysMenuService;
 
-    @Captor private ArgumentCaptor<SysMenu> menuCaptor;
+    @Captor private ArgumentCaptor<SysModule> menuCaptor;
 
     @Test
     @DisplayName("listVisibleMenus 委托仓储")
@@ -51,16 +51,16 @@ class SysMenuServiceTest {
         sysMenuService.searchMenus("  ");
         verify(menuRepository).findAllByIsVisibleOrderBySortOrderAsc(true);
         verify(menuRepository, never())
-                .findByMenuNameContainingAndIsVisibleOrderBySortOrderAsc(anyString(), any());
+                .findByModuleNameContainingAndIsVisibleOrderBySortOrderAsc(anyString(), any());
     }
 
     @Test
     @DisplayName("searchMenus 正常关键词搜索")
     void searchMenus_normal() {
-        given(menuRepository.findByMenuNameContainingAndIsVisibleOrderBySortOrderAsc("用户", true))
+        given(menuRepository.findByModuleNameContainingAndIsVisibleOrderBySortOrderAsc("用户", true))
                 .willReturn(Collections.emptyList());
         sysMenuService.searchMenus("用户");
-        verify(menuRepository).findByMenuNameContainingAndIsVisibleOrderBySortOrderAsc("用户", true);
+        verify(menuRepository).findByModuleNameContainingAndIsVisibleOrderBySortOrderAsc("用户", true);
     }
 
     @Test
@@ -84,18 +84,18 @@ class SysMenuServiceTest {
     @Test
     @DisplayName("getById 委托仓储")
     void getById() {
-        given(menuRepository.findById(1L)).willReturn(Optional.of(new SysMenu()));
+        given(menuRepository.findById(1L)).willReturn(Optional.of(new SysModule()));
         assertThat(sysMenuService.getById(1L)).isPresent();
     }
 
     @Test
     @DisplayName("create 补全默认值：parentId=0、sortOrder=0、isVisible=true")
     void create_defaults() {
-        SysMenu m = new SysMenu();
-        m.setMenuName("用户手册");
-        given(menuRepository.save(any(SysMenu.class))).willAnswer(i -> i.getArgument(0));
+        SysModule m = new SysModule();
+        m.setModuleName("用户手册");
+        given(menuRepository.save(any(SysModule.class))).willAnswer(i -> i.getArgument(0));
 
-        SysMenu saved = sysMenuService.create(m);
+        SysModule saved = sysMenuService.create(m);
 
         assertThat(saved.getParentId()).isEqualTo(0L);
         assertThat(saved.getSortOrder()).isEqualTo(0);
@@ -105,12 +105,12 @@ class SysMenuServiceTest {
     @Test
     @DisplayName("update 父菜单设为自身抛 IllegalArgumentException")
     void update_selfParent_throws() {
-        SysMenu existing = new SysMenu();
+        SysModule existing = new SysModule();
         existing.setId(3L);
-        existing.setMenuName("旧");
+        existing.setModuleName("旧");
         given(menuRepository.findById(3L)).willReturn(Optional.of(existing));
 
-        SysMenu patch = new SysMenu();
+        SysModule patch = new SysModule();
         patch.setParentId(3L);
 
         assertThatThrownBy(() -> sysMenuService.update(3L, patch))
@@ -121,22 +121,22 @@ class SysMenuServiceTest {
     @Test
     @DisplayName("update 正常合并字段并保持未提供字段原值")
     void update_normal() {
-        SysMenu existing = new SysMenu();
+        SysModule existing = new SysModule();
         existing.setId(3L);
-        existing.setMenuName("旧");
+        existing.setModuleName("旧");
         existing.setParentId(0L);
         given(menuRepository.findById(3L)).willReturn(Optional.of(existing));
-        given(menuRepository.save(any(SysMenu.class))).willAnswer(i -> i.getArgument(0));
+        given(menuRepository.save(any(SysModule.class))).willAnswer(i -> i.getArgument(0));
 
-        SysMenu patch = new SysMenu();
-        patch.setMenuName(" 新名称 ");
-        patch.setMenuPath("/x");
+        SysModule patch = new SysModule();
+        patch.setModuleName(" 新名称 ");
+        patch.setModulePath("/x");
         patch.setSortOrder(2);
 
-        SysMenu saved = sysMenuService.update(3L, patch);
+        SysModule saved = sysMenuService.update(3L, patch);
 
-        assertThat(saved.getMenuName()).isEqualTo("新名称");
-        assertThat(saved.getMenuPath()).isEqualTo("/x");
+        assertThat(saved.getModuleName()).isEqualTo("新名称");
+        assertThat(saved.getModulePath()).isEqualTo("/x");
         assertThat(saved.getSortOrder()).isEqualTo(2);
         assertThat(saved.getParentId()).isEqualTo(0L);
     }
@@ -162,7 +162,7 @@ class SysMenuServiceTest {
     @Test
     @DisplayName("delete 递归删除子菜单")
     void delete_withChildren() {
-        SysMenu child = new SysMenu();
+        SysModule child = new SysModule();
         child.setId(2L);
         given(menuRepository.existsById(1L)).willReturn(true);
         given(menuRepository.findByParentIdOrderBySortOrderAsc(1L)).willReturn(Collections.singletonList(child));

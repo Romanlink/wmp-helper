@@ -1,8 +1,10 @@
 package com.xyoo.helper.config;
 
+import com.xyoo.helper.entity.SysModule;
 import com.xyoo.helper.entity.SysRole;
-import com.xyoo.helper.entity.SysRoleMenu;
-import com.xyoo.helper.repository.SysRoleMenuRepository;
+import com.xyoo.helper.entity.SysRoleRelation;
+import com.xyoo.helper.repository.SysModuleRepository;
+import com.xyoo.helper.repository.SysRoleRelationRepository;
 import com.xyoo.helper.repository.SysRoleRepository;
 import com.xyoo.helper.repository.SysUserRepository;
 import com.xyoo.helper.service.SysParamService;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -29,7 +32,8 @@ public class DataInitializer implements CommandLineRunner {
     private final SysParamService sysParamService;
     private final SysUserRepository userRepository;
     private final SysRoleRepository roleRepository;
-    private final SysRoleMenuRepository roleMenuRepository;
+    private final SysRoleRelationRepository roleMenuRepository;
+    private final SysModuleRepository menuRepository;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -39,11 +43,13 @@ public class DataInitializer implements CommandLineRunner {
     public DataInitializer(SysParamService sysParamService,
                             SysUserRepository userRepository,
                             SysRoleRepository roleRepository,
-                            SysRoleMenuRepository roleMenuRepository) {
+                            SysRoleRelationRepository roleMenuRepository,
+                            SysModuleRepository menuRepository) {
         this.sysParamService = sysParamService;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.roleMenuRepository = roleMenuRepository;
+        this.menuRepository = menuRepository;
     }
 
     @Override
@@ -100,12 +106,20 @@ public class DataInitializer implements CommandLineRunner {
     }
 
     private void ensureAdminAllMenus() {
-        // 确保 ADMIN 角色关联所有 sys_menu
+        // 确保 ADMIN 角色关联当前全部 sys_module（含运行时通过模块管理新增的模块）
         Optional<SysRole> adminRole = roleRepository.findById(1L);
         if (adminRole.isEmpty()) return;
 
-        // 删除旧的关联（菜单关联由 schema.sql 维护，详见原注释）
+        // 先清空，再按当前模块表全量回插，保证与 sys_module 始终一致
         roleMenuRepository.deleteByRoleId(1L);
-        log.info("管理员角色菜单关联由 schema.sql 维护");
+        List<SysModule> allModules = menuRepository.findAll();
+        for (SysModule m : allModules) {
+            em.createNativeQuery(
+                            "INSERT IGNORE INTO sys_role_relation (role_id, module_id) VALUES (:rid, :mid)")
+                    .setParameter("rid", 1L)
+                    .setParameter("mid", m.getId())
+                    .executeUpdate();
+        }
+        log.info("管理员角色已关联全部 {} 个模块", allModules.size());
     }
 }
