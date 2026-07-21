@@ -38,7 +38,8 @@ INSERT IGNORE INTO `sys_module` (`id`, `parent_id`, `module_name`, `module_path`
 (100008, 0, '产品中心',  '/', '', 8,  1),
 (100009, 0, '客户中心',  '/', '', 9,  1),
 (100010, 0, '积存金',    '/', '', 10, 1),
-(100011, 0, '其他',      '/', '', 11, 1);
+(100011, 0, '其他',      '/', '', 11, 1),
+(100012, 0, '文档转换',  '/doc-convert', '', 12, 1);
 
 -- ------------------------------------------------------------
 -- 2. 文档信息表 doc_info
@@ -53,6 +54,8 @@ CREATE TABLE IF NOT EXISTS `doc_info` (
     `doc_tags`      VARCHAR(512)    DEFAULT ''                 COMMENT '文档标签，多个用竖线分隔',
     `doc_content`   TEXT                                       COMMENT '文档内容（Markdown 语法）',
     `is_visible`    TINYINT(1)      NOT NULL DEFAULT 1         COMMENT '是否展示：0=隐藏，1=展示',
+    `indexed`       TINYINT(1)      NOT NULL DEFAULT 0         COMMENT '是否已建立向量索引：0=未索引，1=已索引',
+    `embedding_version` VARCHAR(64) DEFAULT ''                 COMMENT '索引所用 embedding 模型版本，用于模型升级后全量重建',
     `create_time`   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time`   DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     PRIMARY KEY (`id`),
@@ -153,3 +156,24 @@ SELECT 2, `id` FROM `sys_module`;
 
 INSERT IGNORE INTO `sys_role_relation` (`role_id`, `module_id`)
 SELECT 3, `id` FROM `sys_module`;
+
+-- ------------------------------------------------------------
+-- 8. 文档切片向量表 doc_chunk（RAG 检索增强）
+-- ------------------------------------------------------------
+-- 说明：
+--   仅持久化切片原文与元数据，向量本身存储在 Qdrant 中（point_id = chunk 的 UUID）。
+--   本表用于「按文档删除/重建索引」时定位 Qdrant 中的点，以及人工排查。
+--   向量维度与 helper.embedding.dim / helper.qdrant.dim 保持一致（bge-m3 = 1024）。
+CREATE TABLE IF NOT EXISTS `doc_chunk` (
+    `id`                BIGINT          NOT NULL AUTO_INCREMENT    COMMENT '主键ID',
+    `doc_id`            VARCHAR(32)     NOT NULL                   COMMENT '所属文档业务ID，关联 doc_info.doc_id',
+    `module_id`         BIGINT          NOT NULL                   COMMENT '所属菜单ID，关联 sys_module.id（RAG 检索 RBAC 过滤用）',
+    `chunk_index`       INT             NOT NULL DEFAULT 0         COMMENT '切片序号，从0开始',
+    `content`           TEXT                                        COMMENT '切片原文（Markdown 片段）',
+    `embedding_version` VARCHAR(64)     DEFAULT ''                 COMMENT '索引所用 embedding 模型版本',
+    `create_time`       DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    PRIMARY KEY (`id`),
+    INDEX `idx_doc_id` (`doc_id`),
+    INDEX `idx_module_id` (`module_id`),
+    INDEX `idx_chunk_index` (`doc_id`, `chunk_index`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='文档切片向量表（RAG）';

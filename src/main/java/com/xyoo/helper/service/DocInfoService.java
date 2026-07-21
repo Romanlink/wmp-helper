@@ -3,6 +3,7 @@ package com.xyoo.helper.service;
 import com.xyoo.helper.entity.DocHistory;
 import com.xyoo.helper.entity.DocInfo;
 import com.xyoo.helper.entity.SysModule;
+import com.xyoo.helper.rag.IndexService;
 import com.xyoo.helper.repository.DocHistoryRepository;
 import com.xyoo.helper.repository.DocInfoRepository;
 import com.xyoo.helper.repository.SysModuleRepository;
@@ -28,13 +29,16 @@ public class DocInfoService {
     private final DocInfoRepository docInfoRepository;
     private final DocHistoryRepository docHistoryRepository;
     private final SysModuleRepository sysMenuRepository;
+    private final IndexService indexService;
 
     public DocInfoService(DocInfoRepository docInfoRepository,
                           DocHistoryRepository docHistoryRepository,
-                          SysModuleRepository sysMenuRepository) {
+                          SysModuleRepository sysMenuRepository,
+                          IndexService indexService) {
         this.docInfoRepository = docInfoRepository;
         this.docHistoryRepository = docHistoryRepository;
         this.sysMenuRepository = sysMenuRepository;
+        this.indexService = indexService;
     }
 
     // ==================== 查询 ====================
@@ -191,6 +195,9 @@ public class DocInfoService {
         // 记录创建历史（拉链表）
         saveHistory(saved, "CREATE", "新建文档", null);
 
+        // 触发向量索引（失败不影响保存，详见 IndexService 内部容错）
+        indexService.indexDocument(saved);
+
         return saved;
     }
 
@@ -239,6 +246,9 @@ public class DocInfoService {
 
         // 记录编辑历史（拉链表）
         saveHistory(saved, "UPDATE", summary, operator);
+
+        // 触发向量索引重建（内容/标题/标签/所属菜单变化都需重建）
+        indexService.indexDocument(saved);
 
         return saved;
     }
@@ -293,6 +303,9 @@ public class DocInfoService {
 
         // 删除文档
         docInfoRepository.delete(existing);
+
+        // 同步删除向量索引
+        indexService.removeDocument(existing.getDocId());
     }
 
     // ==================== 私有方法 ====================

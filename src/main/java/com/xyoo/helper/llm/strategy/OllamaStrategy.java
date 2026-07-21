@@ -67,11 +67,23 @@ public class OllamaStrategy implements LlmStrategy {
 
     @Override
     public void streamChat(String message, Consumer<String> tokenConsumer) throws IOException {
+        stream(null, message, tokenConsumer);
+    }
+
+    @Override
+    public void streamChatWithSystem(String system, String message, Consumer<String> tokenConsumer) throws IOException {
+        stream(system, message, tokenConsumer);
+    }
+
+    private void stream(String system, String message, Consumer<String> tokenConsumer) throws IOException {
         String url = props.getBaseUrl().replaceAll("/+$", "") + "/api/generate";
 
         // 构造请求体
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", props.getModel());
+        if (system != null && !system.isBlank()) {
+            body.put("system", system);
+        }
         body.put("prompt", message == null ? "" : message);
         body.put("stream", true);
 

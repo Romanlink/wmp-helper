@@ -3,6 +3,7 @@ package com.xyoo.helper.config;
 import com.xyoo.helper.entity.SysModule;
 import com.xyoo.helper.entity.SysRole;
 import com.xyoo.helper.entity.SysRoleRelation;
+import com.xyoo.helper.rag.QdrantService;
 import com.xyoo.helper.repository.SysModuleRepository;
 import com.xyoo.helper.repository.SysRoleRelationRepository;
 import com.xyoo.helper.repository.SysRoleRepository;
@@ -34,6 +35,7 @@ public class DataInitializer implements CommandLineRunner {
     private final SysRoleRepository roleRepository;
     private final SysRoleRelationRepository roleMenuRepository;
     private final SysModuleRepository menuRepository;
+    private final QdrantService qdrantService;
 
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
@@ -44,12 +46,14 @@ public class DataInitializer implements CommandLineRunner {
                             SysUserRepository userRepository,
                             SysRoleRepository roleRepository,
                             SysRoleRelationRepository roleMenuRepository,
-                            SysModuleRepository menuRepository) {
+                            SysModuleRepository menuRepository,
+                            QdrantService qdrantService) {
         this.sysParamService = sysParamService;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.roleMenuRepository = roleMenuRepository;
         this.menuRepository = menuRepository;
+        this.qdrantService = qdrantService;
     }
 
     @Override
@@ -70,6 +74,16 @@ public class DataInitializer implements CommandLineRunner {
 
         // === 管理员角色关联所有菜单 ===
         ensureAdminAllMenus();
+
+        // === 文档转换菜单（PDF -> Word），挂在「全站检索」同级，供 RBAC 与菜单管理使用 ===
+        ensureDocConvertMenu();
+
+        // === 确保 RAG 向量集合存在（Qdrant 不可用时仅告警，不影响启动）===
+        try {
+            qdrantService.ensureCollection();
+        } catch (Exception e) {
+            log.warn("启动时确保 Qdrant 集合失败（RAG 检索将不可用，可稍后重启或手动创建）: {}", e.getMessage());
+        }
 
         log.info("=== 系统数据初始化完成 ===");
     }
@@ -121,5 +135,22 @@ public class DataInitializer implements CommandLineRunner {
                     .executeUpdate();
         }
         log.info("管理员角色已关联全部 {} 个模块", allModules.size());
+    }
+
+    /**
+     * 确保存在「文档转换」菜单（PDF → Word）。
+     * 顶层菜单（parentId=0），用于 RBAC 与菜单管理；前端在「全站检索」旁新增入口。
+     */
+    private void ensureDocConvertMenu() {
+        Long id = 100012L;
+        if (menuRepository.existsById(id)) {
+            return;
+        }
+        em.createNativeQuery(
+                        "INSERT IGNORE INTO sys_module (id, parent_id, module_name, module_path, module_icon, sort_order, is_visible) "
+                                + "VALUES (:id, 0, '文档转换', '/doc-convert', '', 12, 1)")
+                .setParameter("id", id)
+                .executeUpdate();
+        log.info("已创建菜单：文档转换（/doc-convert）");
     }
 }

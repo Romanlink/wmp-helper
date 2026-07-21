@@ -32,4 +32,18 @@ public interface LlmStrategy {
      * @throws IOException 网络异常或客户端断开时抛出
      */
     void streamChat(String message, Consumer<String> tokenConsumer) throws IOException;
+
+    /**
+     * 流式对话（带系统提示）。
+     * <p>默认实现忽略 system 提示直接对话；需要约束模型行为的策略
+     * （Ollama / OpenAI 兼容）应重写本方法以支持 system 提示（如 RAG 场景的
+     * 「仅基于以下资料回答」）。</p>
+     *
+     * @param systemPrompt  系统提示
+     * @param message       用户提问
+     * @param tokenConsumer token 消费者
+     */
+    default void streamChatWithSystem(String systemPrompt, String message, Consumer<String> tokenConsumer) throws IOException {
+        streamChat(message, tokenConsumer);
+    }
 }

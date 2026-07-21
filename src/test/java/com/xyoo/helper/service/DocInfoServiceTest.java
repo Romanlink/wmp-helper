@@ -3,6 +3,7 @@ package com.xyoo.helper.service;
 import com.xyoo.helper.entity.DocHistory;
 import com.xyoo.helper.entity.DocInfo;
 import com.xyoo.helper.entity.SysModule;
+import com.xyoo.helper.rag.IndexService;
 import com.xyoo.helper.repository.DocHistoryRepository;
 import com.xyoo.helper.repository.DocInfoRepository;
 import com.xyoo.helper.repository.SysModuleRepository;
@@ -38,6 +39,7 @@ class DocInfoServiceTest {
     @Mock private DocInfoRepository docInfoRepository;
     @Mock private DocHistoryRepository docHistoryRepository;
     @Mock private SysModuleRepository sysMenuRepository;
+    @Mock private IndexService indexService;
 
     @InjectMocks private DocInfoService docInfoService;
 

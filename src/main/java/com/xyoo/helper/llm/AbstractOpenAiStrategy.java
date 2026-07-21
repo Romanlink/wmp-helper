@@ -147,4 +147,88 @@ public abstract class AbstractOpenAiStrategy implements LlmStrategy {
                     + "），请确认地址可访问且网络通畅。", e);
         }
     }
+
+    @Override
+    public void streamChatWithSystem(String system, String message, Consumer<String> tokenConsumer) throws IOException {
+        if (!isEnabled()) {
+            tokenConsumer.accept(disabledMessage());
+            return;
+        }
+        String url = props.getBaseUrl().replaceAll("/+$", "") + completionsPath();
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("model", props.getModel());
+        body.put("stream", true);
+        java.util.List<Map<String, String>> messages = new java.util.ArrayList<>();
+        if (system != null && !system.isBlank()) {
+            Map<String, String> sysMsg = new LinkedHashMap<>();
+            sysMsg.put("role", "system");
+            sysMsg.put("content", system);
+            messages.add(sysMsg);
+        }
+        Map<String, String> userMsg = new LinkedHashMap<>();
+        userMsg.put("role", "user");
+        userMsg.put("content", message == null ? "" : message);
+        messages.add(userMsg);
+        body.put("messages", messages);
+
+        byte[] requestBody;
+        try {
+            requestBody = objectMapper.writeValueAsBytes(body);
+        } catch (IOException e) {
+            log.error("构造 {} 请求体失败", provider(), e);
+            tokenConsumer.accept("抱歉，请求构造失败，请稍后重试。");
+            return;
+        }
+
+        try {
+            restTemplate.execute(url, HttpMethod.POST,
+                    request -> {
+                        HttpHeaders headers = request.getHeaders();
+                        headers.setContentType(MediaType.APPLICATION_JSON);
+                        headers.setBearerAuth(props.getApiKey());
+                    },
+                    response -> {
+                        try (BufferedReader reader = new BufferedReader(
+                                new InputStreamReader(response.getBody(), StandardCharsets.UTF_8))) {
+                            String line;
+                            while ((line = reader.readLine()) != null) {
+                                if (line.trim().isEmpty()) {
+                                    continue;
+                                }
+                                if (!line.startsWith("data:")) {
+                                    continue;
+                                }
+                                String data = line.substring(5).trim();
+                                if ("[DONE]".equals(data)) {
+                                    break;
+                                }
+                                try {
+                                    JsonNode node = objectMapper.readTree(data);
+                                    JsonNode choices = node.get("choices");
+                                    if (choices != null && choices.isArray() && choices.size() > 0) {
+                                        JsonNode delta = choices.get(0).get("delta");
+                                        if (delta != null) {
+                                            JsonNode content = delta.get("content");
+                                            if (content != null && !content.isNull()) {
+                                                tokenConsumer.accept(content.asText());
+                                            }
+                                        }
+                                    }
+                                } catch (Exception parseEx) {
+                                    log.debug("跳过无法解析的 {} 响应行: {}", provider(), line);
+                                }
+                            }
+                        }
+                        return null;
+                    });
+        } catch (HttpStatusCodeException e) {
+            log.warn("{} 接口返回错误: {}", provider(), e.getStatusCode());
+            throw new IOException(provider() + " 接口调用失败（" + e.getStatusCode() + "）："
+                    + e.getResponseBodyAsString(), e);
+        } catch (ResourceAccessException e) {
+            log.warn("连接 {} 失败: {}", provider(), e.getMessage());
+            throw new IOException("无法连接 " + provider() + " 服务（" + url
+                    + "），请确认地址可访问且网络通畅。", e);
+        }
+    }
 }

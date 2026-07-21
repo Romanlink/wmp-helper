@@ -1,15 +1,23 @@
 package com.xyoo.helper.controller;
 
 import com.xyoo.helper.common.BaseController;
+import com.xyoo.helper.common.LoginUser;
+import com.xyoo.helper.rag.RetrievalService;
+import com.xyoo.helper.service.AuthService;
 import com.xyoo.helper.service.ChatService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * AI 对话 SSE 接口
@@ -29,9 +37,13 @@ public class ChatController extends BaseController {
     private static final Logger log = LoggerFactory.getLogger(ChatController.class);
 
     private final ChatService chatService;
+    private final RetrievalService retrievalService;
+    private final AuthService authService;
 
-    public ChatController(ChatService chatService) {
+    public ChatController(ChatService chatService, RetrievalService retrievalService, AuthService authService) {
         this.chatService = chatService;
+        this.retrievalService = retrievalService;
+        this.authService = authService;
     }
 
     /**
@@ -101,6 +113,106 @@ public class ChatController extends BaseController {
         writer.write(sb.toString());
         writer.flush();
         response.flushBuffer();
+    }
+
+    /**
+     * RAG 流式问答（基于私有文档，带角色权限过滤）。
+     * <p>接收 JSON {@code {message}}；先按当前登录人角色可见菜单检索相关文档片段，
+     * 再拼成系统提示交给大模型生成带依据的回答。需要登录（前端 fetch 带 token）。</p>
+     */
+    @PostMapping(value = "/rag", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public void rag(@RequestBody Map<String, String> req, HttpServletResponse response) {
+        String message = (req == null || req.get("message") == null) ? "" : req.get("message");
+        if (message.isBlank()) {
+            writeSimple(response, "请输入您的问题。");
+            return;
+        }
+
+        response.setContentType("text/event-stream");
+        response.setCharacterEncoding("UTF-8");
+        response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        response.setHeader("Pragma", "no-cache");
+        response.setHeader("Connection", "keep-alive");
+        response.setHeader("X-Accel-Buffering", "no");
+
+        try {
+            PrintWriter writer = response.getWriter();
+            writer.write(":ok\n\n");
+            writer.flush();
+            response.flushBuffer();
+
+            // 解析当前登录人角色 → 可见菜单集合（RBAC 过滤）
+            LoginUser cur = getCurInfo();
+            Set<Long> allowed = (cur != null && cur.getRoleId() != null)
+                    ? authService.findModuleIdsByRole(cur.getRoleId())
+                    : Collections.emptySet();
+
+            // 检索相关片段
+            List<RetrievalService.RetrievedChunk> chunks = retrievalService.retrieve(message, allowed);
+            String systemPrompt = buildRagPrompt(message, chunks);
+
+            chatService.streamRag(systemPrompt, message, token -> {
+                try {
+                    writeToken(writer, response, token);
+                } catch (IOException e) {
+                    throw new RuntimeException("SSE 写出失败", e);
+                }
+            });
+
+            writer.write("data:[DONE]\n\n");
+            writer.flush();
+            response.flushBuffer();
+        } catch (IOException e) {
+            logWarnAndClose(response, e.getMessage());
+        } catch (Exception e) {
+            logWarnAndClose(response, "RAG 对话处理异常：" + e.getMessage());
+        }
+    }
+
+    /**
+     * 构造 RAG 系统提示：约束模型仅基于检索资料回答，并附上来源片段。
+     */
+    private String buildRagPrompt(String question, List<RetrievalService.RetrievedChunk> chunks) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("你是一个企业私有文档智能助手。请严格依据下面提供的【参考资料】回答用户问题。\n");
+        sb.append("要求：\n");
+        sb.append("1. 仅使用参考资料中的内容作答；若资料中不存在相关信息，请明确说明「根据现有资料无法回答该问题」，不要编造。\n");
+        sb.append("2. 回答末尾用「参考文档：xxx」标注引用来源标题（若有）。\n");
+        sb.append("3. 语言简洁、准确，使用中文。\n\n");
+
+        if (chunks == null || chunks.isEmpty()) {
+            sb.append("【参考资料】：（当前无相关文档）\n");
+        } else {
+            sb.append("【参考资料】\n");
+            int i = 1;
+            for (RetrievalService.RetrievedChunk c : chunks) {
+                String title = (c.getDocTitle() == null || c.getDocTitle().isBlank()) ? "未命名文档" : c.getDocTitle();
+                sb.append(i).append(". 《").append(title).append("》\n").append(c.getContent()).append("\n\n");
+                i++;
+            }
+        }
+        sb.append("用户问题：").append(question);
+        return sb.toString();
+    }
+
+    /**
+     * 直接返回一条非流式提示（用于参数校验失败等场景）。
+     */
+    private void writeSimple(HttpServletResponse response, String msg) {
+        try {
+            response.setContentType("text/event-stream");
+            response.setCharacterEncoding("UTF-8");
+            PrintWriter writer = response.getWriter();
+            String normalized = msg.replace("\r\n", "\n").replace('\r', '\n');
+            for (String line : normalized.split("\n", -1)) {
+                writer.write("data: " + line + "\n");
+            }
+            writer.write("data:[DONE]\n\n");
+            writer.flush();
+            response.flushBuffer();
+        } catch (Exception ignored) {
+            // 客户端已断开，静默处理
+        }
     }
 
     /**

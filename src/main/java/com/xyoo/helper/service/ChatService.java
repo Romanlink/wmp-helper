@@ -64,4 +64,30 @@ public class ChatService {
         log.info("使用模型策略：{}（model={}）", strategy.provider(), props.getModel());
         strategy.streamChat(message, tokenConsumer);
     }
+
+    /**
+     * RAG 流式对话：将系统提示（含检索到的资料与约束）与用户问题一并下发给模型。
+     *
+     * @param systemPrompt  系统提示（含检索到的文档片段与「仅基于资料回答」约束）
+     * @param message       用户提问
+     * @param tokenConsumer token 消费者
+     */
+    public void streamRag(String systemPrompt, String message, Consumer<String> tokenConsumer) throws IOException {
+        if (!props.isEnabled()) {
+            tokenConsumer.accept("当前未启用大模型。请在配置中开启 helper.llm.enabled=true。");
+            return;
+        }
+        LlmStrategy strategy = factory.get(props.getProvider());
+        if (strategy == null) {
+            tokenConsumer.accept("未配置可用的模型 provider：" + props.getProvider()
+                    + "。可选值：" + factory.providers());
+            return;
+        }
+        if (!strategy.isEnabled()) {
+            tokenConsumer.accept(strategy.disabledMessage());
+            return;
+        }
+        log.info("使用模型策略（RAG）：{}（model={}）", strategy.provider(), props.getModel());
+        strategy.streamChatWithSystem(systemPrompt, message, tokenConsumer);
+    }
 }

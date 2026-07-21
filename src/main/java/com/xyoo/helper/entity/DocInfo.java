@@ -61,6 +61,14 @@ public class DocInfo implements Serializable {
     @Comment("是否展示：0=隐藏，1=展示")
     private Boolean isVisible = true;
 
+    @Column(name = "indexed", nullable = false, columnDefinition = "TINYINT(1) DEFAULT 0")
+    @Comment("是否已建立向量索引：0=未索引，1=已索引")
+    private Boolean indexed = false;
+
+    @Column(name = "embedding_version", length = 64)
+    @Comment("索引使用的 embedding 模型版本，便于模型升级后全量重建")
+    private String embeddingVersion;
+
     @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @Column(name = "create_time", nullable = false, updatable = false)
     @Comment("创建时间")
@@ -163,6 +171,22 @@ public class DocInfo implements Serializable {
 
     public void setIsVisible(Boolean isVisible) {
         this.isVisible = isVisible;
+    }
+
+    public Boolean getIndexed() {
+        return indexed;
+    }
+
+    public void setIndexed(Boolean indexed) {
+        this.indexed = indexed;
+    }
+
+    public String getEmbeddingVersion() {
+        return embeddingVersion;
+    }
+
+    public void setEmbeddingVersion(String embeddingVersion) {
+        this.embeddingVersion = embeddingVersion;
     }
 
     public LocalDateTime getCreateTime() {
